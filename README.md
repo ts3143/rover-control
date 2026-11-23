@@ -1,9 +1,9 @@
 # Rover Control
 
-Drive our 4-motor rover from a Mac over USB, using a NodeMCU (ESP8266) and an L298N motor driver.
+Drive our 4-motor rover from a Mac over USB with a **Logitech F310 gamepad** (or the keyboard), using a NodeMCU (ESP8266) and an L298N motor driver.
 
 ```
-Mac (Chrome)  --USB/CP2102-->  NodeMCU ESP8266  -->  L298N  -->  2 left + 2 right motors
+F310 --USB--> Mac (Chrome)  --USB/CP2102-->  NodeMCU ESP8266  -->  L298N  -->  2 left + 2 right motors
 ```
 
 ## Repo layout
@@ -11,7 +11,7 @@ Mac (Chrome)  --USB/CP2102-->  NodeMCU ESP8266  -->  L298N  -->  2 left + 2 righ
 | Path | What it is |
 |---|---|
 | `firmware/rover_esp8266/rover_esp8266.ino` | Arduino firmware for the NodeMCU |
-| `web/rover-control.html` | Browser control panel (Chrome/Edge, Web Serial) |
+| `web/rover-control.html` | Browser control panel: F310 gamepad + keyboard (Chrome/Edge, Web Serial + Gamepad API) |
 | `tools/controller.py` | Optional terminal controller (`pip3 install pyserial`) |
 | `docs/wiring-diagram.png` | Team wiring diagram |
 
@@ -66,9 +66,38 @@ Close the Serial Monitor before using the control panel (only one app can hold t
 ```bash
 open -a "Google Chrome" web/rover-control.html
 ```
-Click **Connect**, pick the `usbserial` port, then drive or click **Run motor test** (wheels off the ground first).
+Click **Connect rover**, pick the `usbserial` port, then drive or click **Run motor test** (wheels off the ground first).
 
-## Controls
+> Re-upload the firmware from this branch first — the gamepad uses the new `M` command (older firmware ignores it).
+
+Want to see the UI without the rover or a gamepad? Open `web/rover-control.html?demo` (simulated F310 input; needs a local server, e.g. `python3 -m http.server -d web`).
+
+## Gamepad (Logitech F310)
+
+1. Set the switch on the back of the F310 to **D** (DirectInput). macOS doesn't support X (XInput) mode without extra drivers.
+2. Plug it into the Mac and press any button — the header shows **Logitech F310** in green.
+3. Make sure the **MODE** light is **off** (when it's on, the D-pad and left stick are swapped).
+4. Press **A** to arm. The rover only obeys the gamepad while armed.
+
+| F310 | Action |
+|---|---|
+| Left stick ↕ | Throttle (arcade) · left wheels (tank) |
+| Right stick | Steer ↔ (arcade) · right wheels ↕ (tank) |
+| D-pad | Drive / spin at the speed limit |
+| RT (hold) | Turbo — full speed |
+| LT (hold) | Precision — 40% of the speed limit |
+| LB / RB | Speed limit − / + |
+| A | Arm |
+| **B** | **Emergency stop + disarm** |
+| Y | Toggle arcade / tank mode |
+
+Sticks are proportional (variable speed per side), with a 12% deadzone. Speed is scaled so the smallest stick movement is still ~PWM 60, below which the motors only hum.
+If the rover turns the wrong way with the stick, flip **Invert steering** in the panel (or fix `sides()` in firmware).
+Leaving the window, unplugging the gamepad, or pressing B disarms it. Keyboard input overrides the gamepad.
+
+The four wheels are shown individually in the UI, but with one L298N the two wheels on each side are wired in parallel and always get the same command. Independent per-wheel control would need a second driver (e.g. another L298N) and four PWM channels.
+
+## Keyboard
 
 | Key | Action |
 |---|---|
@@ -91,9 +120,10 @@ Failsafe: motors stop if no command arrives for 500 ms (cable unplugged, tab clo
 | `F` `B` `L` `R` | Forward, back, left, right |
 | `S` | Stop |
 | `0`–`9` | Speed (0 = off, 9 = full PWM) |
+| `M<left> <right>\n` | Proportional drive, each side −255..255 PWM, e.g. `M200 -120` (used by the gamepad) |
 
 The sender must repeat the current command at least every 500 ms while moving.
-Firmware replies: `ROVER READY`, `CMD <x>`, `FAILSAFE STOP`.
+Firmware replies: `ROVER READY`, `CMD <x>` (`CMD M` when analog driving starts), `FAILSAFE STOP`.
 
 ## Troubleshooting
 
@@ -105,6 +135,8 @@ Firmware replies: `ROVER READY`, `CMD <x>`, `FAILSAFE STOP`.
 | Motors hum but don't turn | Raise supply current limit / voltage, or use speed 7–9 |
 | A pair won't run one direction | Check IN3/IN4 wiring to D7/D4 |
 | One motor of a pair spins backwards | Swap that motor's two wires |
+| Gamepad not detected / yellow warning | Switch on the back to **D**, unplug and replug, press a button with the page focused |
+| Stick and D-pad swapped | Press the **MODE** button so its light is off |
 | `requestPort` error in browser | Open the HTML directly in Chrome, not in a preview pane |
 | Board won't boot with L298N connected | Unplug IN4 (D4), press RST, reconnect |
 
