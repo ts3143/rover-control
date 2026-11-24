@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rover Control</title>
+<style>
+  :root {
+    --bg: #0f1115; --panel: #181b22; --line: #2a2f3a; --text: #e6e8ec;
+    --dim: #8a91a0; --accent: #3ddc97; --warn: #ff6b5b; --btn: #222733;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; background: var(--bg); color: var(--text);
+    font: 15px/1.4 -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+    display: flex; justify-content: center; align-items: flex-start; padding: 32px 16px;
+    user-select: none; -webkit-user-select: none;
+  }
+  .app { width: 100%; max-width: 760px; display: grid; gap: 16px; }
+  header { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  h1 { font-size: 20px; margin: 0; letter-spacing: .02em; }
+  .status { display: flex; align-items: center; gap: 8px; color: var(--dim); font-size: 13px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--warn); }
+  .dot.on { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
+  button {
+    font: inherit; color: var(--text); background: var(--btn); border: 1px solid var(--line);
+    border-radius: 10px; padding: 9px 16px; cursor: pointer;
+  }
+  button:hover { border-color: #3a4152; }
+  button.primary { background: var(--accent); color: #0b1a12; border-color: var(--accent); font-weight: 600; }
+  button:disabled { opacity: .4; cursor: not-allowed; }
+  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 20px; }
+  .main { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 640px) { .main { grid-template-columns: 1fr; } }
+
+  .pad { display: grid; grid-template-columns: repeat(3, 84px); grid-template-rows: repeat(3, 84px); gap: 10px; justify-content: center; }
+  .pad button {
+    font-size: 26px; border-radius: 16px; padding: 0; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; touch-action: none;
+  }
+  .pad button small { font-size: 11px; color: var(--dim); margin-top: 2px; }
+  .pad button.active { background: var(--accent); color: #0b1a12; border-color: var(--accent); }
+  .pad button.active small { color: #0b1a12; }
+  .pad .stop { background: #2a1a1a; border-color: #4a2626; color: var(--warn); font-size: 14px; font-weight: 700; }
+  .pad .stop.active { background: var(--warn); color: #fff; border-color: var(--warn); }
+  .f { grid-area: 1 / 2; } .l { grid-area: 2 / 1; } .s { grid-area: 2 / 2; } .r { grid-area: 2 / 3; } .b { grid-area: 3 / 2; }
+
+  .label { font-size: 12px; color: var(--dim); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 6px; }
+  .state { font-size: 34px; font-weight: 700; letter-spacing: .04em; margin-bottom: 18px; }
+  .state.moving { color: var(--accent); }
+  .speedrow { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }
+  input[type=range] { flex: 1; accent-color: var(--accent); }
+  .speedval { font-variant-numeric: tabular-nums; min-width: 42px; text-align: right; font-weight: 600; }
+  .toggle { display: flex; align-items: center; gap: 8px; color: var(--dim); font-size: 13px; cursor: pointer; }
+  .keys { color: var(--dim); font-size: 13px; margin-top: 16px; line-height: 1.7; }
+  kbd { background: var(--btn); border: 1px solid var(--line); border-radius: 5px; padding: 1px 6px; font: 12px ui-monospace, Menlo, monospace; color: var(--text); }
+
+  .log { font: 12px/1.5 ui-monospace, Menlo, monospace; height: 140px; overflow-y: auto; color: var(--dim); white-space: pre-wrap; }
+  .log .rx { color: var(--text); } .log .err { color: var(--warn); }
+  .warn { background: #2a1a1a; border: 1px solid #4a2626; color: #ffb3ab; border-radius: 10px; padding: 12px 14px; font-size: 13px; display: none; }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>Rover Control</h1>
+    <div style="display:flex;gap:12px;align-items:center">
+      <div class="status"><span class="dot" id="dot"></span><span id="statusText">Disconnected</span></div>
+      <button class="primary" id="connectBtn">Connect</button>
+    </div>
+  </header>
+
+  <div class="warn" id="noSerial">This browser doesn't support Web Serial. Open this page in <b>Chrome</b> or <b>Edge</b> on your Mac.</div>
+
+  <div class="main">
+    <div class="panel">
+      <div class="pad">
+        <button class="f" data-cmd="F">▲<small>W</small></button>
+        <button class="l" data-cmd="L">◀<small>A</small></button>
+        <button class="s stop" data-cmd="S">STOP<small>SPACE</small></button>
+        <button class="r" data-cmd="R">▶<small>D</small></button>
+        <button class="b" data-cmd="B">▼<small>S</small></button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="label">State</div>
+      <div class="state" id="state">STOPPED</div>
+
+      <div class="label">Speed</div>
+      <div class="speedrow">
+        <input type="range" id="speed" min="1" max="9" value="7">
+        <span class="speedval" id="speedVal">7/9</span>
+      </div>
+
+      <label class="toggle"><input type="checkbox" id="latch"> Latch mode (stay moving after release)</label>
+
+      <button id="testBtn" style="margin-top:16px;width:100%" disabled>Run motor test (wheels off ground)</button>
+
+      <div class="keys">
+        <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> or arrows to drive (hold)<br>
+        <kbd>Space</kbd> stop &nbsp; <kbd>1</kbd>–<kbd>9</kbd> speed
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="label">Rover log</div>
+    <div class="log" id="log"></div>
+  </div>
+</div>
+
+<script>
+const NAMES = { F: 'FORWARD', B: 'BACKWARD', L: 'LEFT', R: 'RIGHT', S: 'STOPPED' };
+const KEYMAP = { w: 'F', arrowup: 'F', s: 'B', arrowdown: 'B', a: 'L', arrowleft: 'L', d: 'R', arrowright: 'R', ' ': 'S' };
+const HEARTBEAT_MS = 100;   // firmware failsafe is 500 ms
+
+let port = null, writer = null, reader = null;
+let cmd = 'S';
+let gotData = false;
+const held = [];            // stack of held drive keys (most recent wins)
+
+const $ = id => document.getElementById(id);
+const logEl = $('log');
+
+function log(msg, cls = '') {
+  const line = document.createElement('div');
+  if (cls) line.className = cls;
+  line.textContent = `${new Date().toLocaleTimeString()}  ${msg}`;
+  logEl.appendChild(line);
+  while (logEl.children.length > 200) logEl.firstChild.remove();
+  logEl.scrollTop = logEl.scrollHeight;
+}
+
+async function send(text) {
+  if (!writer) return;
+  try { await writer.write(new TextEncoder().encode(text)); }
+  catch (e) { log('Write failed: ' + e.message, 'err'); }
+}
+
+function setCmd(c) {
+  if (c === cmd) return;
+  cmd = c;
+  send(c);
+  $('state').textContent = NAMES[c];
+  $('state').classList.toggle('moving', c !== 'S');
+  document.querySelectorAll('.pad button').forEach(b => b.classList.toggle('active', b.dataset.cmd === c));
+}
+
+function press(c) {
+  if (c === 'S') { held.length = 0; setCmd('S'); return; }
+  const i = held.indexOf(c); if (i >= 0) held.splice(i, 1);
+  held.push(c);
+  setCmd(c);
+}
+function release(c) {
+  if ($('latch').checked) return;
+  const i = held.indexOf(c); if (i >= 0) held.splice(i, 1);
+  setCmd(held.length ? held[held.length - 1] : 'S');
+}
+
+function setSpeed(v) {
+  $('speed').value = v;
+  $('speedVal').textContent = `${v}/9`;
+  send(String(v));
+}
+
+// ---- Serial ----
+async function connect() {
+  if (port) return disconnect();
+  try {
+    port = await navigator.serial.requestPort();
+    await port.open({ baudRate: 115200 });
+    // Release DTR/RTS so the ESP32 auto-reset circuit doesn't hold it in reset/bootloader
+    try { await port.setSignals({ dataTerminalReady: false, requestToSend: false }); } catch (e) {}
+    writer = port.writable.getWriter();
+    setConnected(true);
+    gotData = false;
+    log('Connected. Waiting for rover (ESP32 resets on connect)…');
+    readLoop();
+    setTimeout(() => {
+      if (port && !gotData) log('No reply from rover yet. Press the EN/RST button on the board. If still nothing: firmware not uploaded, or wrong port.', 'err');
+    }, 4000);
+    setTimeout(() => setSpeed($('speed').value), 1500);
+  } catch (e) {
+    port = null;
+    if (e.name !== 'NotFoundError') log('Connect failed: ' + e.message, 'err');
+  }
+}
+
+async function disconnect() {
+  try {
+    await send('S');
+    if (reader) { await reader.cancel(); reader = null; }
+    if (writer) { writer.releaseLock(); writer = null; }
+    if (port) await port.close();
+  } catch (e) {}
+  port = null;
+  setConnected(false);
+  held.length = 0; setCmd('S');
+  log('Disconnected.');
+}
+
+async function readLoop() {
+  const decoder = new TextDecoder();
+  let buf = '';
+  while (port && port.readable) {
+    reader = port.readable.getReader();
+    try {
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        gotData = true;
+        buf += decoder.decode(value);
+        let nl;
+        while ((nl = buf.indexOf('\n')) >= 0) {
+          const line = buf.slice(0, nl).trim();
+          buf = buf.slice(nl + 1);
+          if (line) log(line, line.includes('FAILSAFE') ? 'err' : 'rx');
+        }
+      }
+    } catch (e) {
+      log('Connection lost: ' + e.message, 'err');
+      reader.releaseLock(); reader = null;
+      return disconnect();
+    } finally {
+      if (reader) { reader.releaseLock(); reader = null; }
+    }
+  }
+}
+
+function setConnected(on) {
+  $('dot').classList.toggle('on', on);
+  $('statusText').textContent = on ? 'Connected' : 'Disconnected';
+  $('connectBtn').textContent = on ? 'Disconnect' : 'Connect';
+  $('connectBtn').classList.toggle('primary', !on);
+  $('testBtn').disabled = !on;
+  if (!on) testing = false;
+}
+
+// ---- Automatic motor test: F, B, L, R for 1.5 s each at speed 4 ----
+let testing = false;
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+async function runTest() {
+  if (testing) { testing = false; return; }        // second click aborts
+  testing = true;
+  const btn = $('testBtn'), prevSpeed = $('speed').value;
+  btn.textContent = 'Abort test';
+  setSpeed(4);
+  log('--- Motor test start ---');
+  for (const c of ['F', 'B', 'L', 'R']) {
+    if (!testing || !writer) break;
+    log(`Test: ${NAMES[c]} — check the wheels`);
+    setCmd(c); await sleep(1500);
+    setCmd('S'); await sleep(800);
+  }
+  setCmd('S');
+  log(testing ? '--- Motor test done ---' : '--- Motor test aborted ---');
+  testing = false;
+  setSpeed(prevSpeed);
+  btn.textContent = 'Run motor test (wheels off ground)';
+}
+$('testBtn').onclick = runTest;
+document.addEventListener('keydown', e => { if (e.key === ' ' && testing) testing = false; });
+
+// Heartbeat keeps the firmware failsafe from tripping while moving
+setInterval(() => { if (writer && cmd !== 'S') send(cmd); }, HEARTBEAT_MS);
+
+// ---- Inputs ----
+$('connectBtn').onclick = connect;
+$('speed').oninput = e => setSpeed(e.target.value);
+
+document.querySelectorAll('.pad button').forEach(btn => {
+  const c = btn.dataset.cmd;
+  btn.addEventListener('pointerdown', e => { btn.setPointerCapture(e.pointerId); press(c); });
+  btn.addEventListener('pointerup', () => release(c));
+  btn.addEventListener('pointercancel', () => release(c));
+});
+
+document.addEventListener('keydown', e => {
+  const k = e.key.toLowerCase();
+  if (KEYMAP[k]) { e.preventDefault(); if (!e.repeat) press(KEYMAP[k]); }
+  else if (/^[1-9]$/.test(k)) setSpeed(k);
+});
+document.addEventListener('keyup', e => {
+  const k = e.key.toLowerCase();
+  if (KEYMAP[k] && KEYMAP[k] !== 'S') release(KEYMAP[k]);
+});
+// Safety: stop if the window loses focus or closes
+window.addEventListener('blur', () => { held.length = 0; setCmd('S'); });
+window.addEventListener('beforeunload', () => send('S'));
+
+if (!('serial' in navigator)) {
+  $('noSerial').style.display = 'block';
+  $('connectBtn').disabled = true;
+} else {
+  navigator.serial.addEventListener('disconnect', e => { if (e.target === port) disconnect(); });
+}
+</script>
+</body>
+</html>
