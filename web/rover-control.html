@@ -6,118 +6,331 @@
 <title>Rover Control</title>
 <style>
   :root {
-    --bg: #0f1115; --panel: #181b22; --line: #2a2f3a; --text: #e6e8ec;
-    --dim: #8a91a0; --accent: #3ddc97; --warn: #ff6b5b; --btn: #222733;
+    --bg: #0b0d12; --panel: #13161d; --panel2: #181c25; --line: #252a36; --line2: #323848;
+    --text: #e8eaf0; --dim: #8a91a3; --faint: #5a6172;
+    --accent: #3ddc97; --accent-ink: #062014; --rev: #ffb547; --warn: #ff6b5b; --blue: #5aa9ff;
+    --btn: #1d2230;
   }
   * { box-sizing: border-box; }
   body {
-    margin: 0; min-height: 100vh; background: var(--bg); color: var(--text);
-    font: 15px/1.4 -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
-    display: flex; justify-content: center; align-items: flex-start; padding: 32px 16px;
+    margin: 0; min-height: 100vh; color: var(--text);
+    background: radial-gradient(1200px 600px at 20% -10%, #15202a 0%, transparent 60%),
+                radial-gradient(900px 500px at 110% 10%, #1a1626 0%, transparent 55%), var(--bg);
+    font: 14px/1.45 -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+    display: flex; justify-content: center; padding: 28px 16px 40px;
     user-select: none; -webkit-user-select: none;
   }
-  .app { width: 100%; max-width: 760px; display: grid; gap: 16px; }
-  header { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
-  h1 { font-size: 20px; margin: 0; letter-spacing: .02em; }
-  .status { display: flex; align-items: center; gap: 8px; color: var(--dim); font-size: 13px; }
-  .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--warn); }
-  .dot.on { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
-  button {
-    font: inherit; color: var(--text); background: var(--btn); border: 1px solid var(--line);
-    border-radius: 10px; padding: 9px 16px; cursor: pointer;
-  }
-  button:hover { border-color: #3a4152; }
-  button.primary { background: var(--accent); color: #0b1a12; border-color: var(--accent); font-weight: 600; }
-  button:disabled { opacity: .4; cursor: not-allowed; }
-  .panel { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 20px; }
-  .main { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
-  @media (max-width: 640px) { .main { grid-template-columns: 1fr; } }
+  .app { width: 100%; max-width: 1120px; display: grid; gap: 16px; }
 
-  .pad { display: grid; grid-template-columns: repeat(3, 84px); grid-template-rows: repeat(3, 84px); gap: 10px; justify-content: center; }
-  .pad button {
-    font-size: 26px; border-radius: 16px; padding: 0; display: flex; flex-direction: column;
-    align-items: center; justify-content: center; touch-action: none;
+  /* ---- header ---- */
+  header { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .logo { width: 38px; height: 38px; border-radius: 11px; background: linear-gradient(135deg, var(--accent), #1fa3c9);
+          display: grid; place-items: center; box-shadow: 0 6px 20px -6px #3ddc9780; }
+  h1 { font-size: 19px; margin: 0; letter-spacing: .01em; }
+  .sub { color: var(--dim); font-size: 12px; }
+  .hright { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .pill { display: flex; align-items: center; gap: 8px; padding: 7px 12px; border-radius: 999px;
+          background: var(--panel); border: 1px solid var(--line); color: var(--dim); font-size: 12.5px; white-space: nowrap; }
+  .pill b { color: var(--text); font-weight: 600; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--warn); flex: none; }
+  .dot.on { background: var(--accent); box-shadow: 0 0 10px var(--accent); }
+
+  button {
+    font: inherit; color: var(--text); background: var(--btn); border: 1px solid var(--line2);
+    border-radius: 10px; padding: 8px 15px; cursor: pointer; transition: background .15s, border-color .15s;
   }
-  .pad button small { font-size: 11px; color: var(--dim); margin-top: 2px; }
-  .pad button.active { background: var(--accent); color: #0b1a12; border-color: var(--accent); }
-  .pad button.active small { color: #0b1a12; }
-  .pad .stop { background: #2a1a1a; border-color: #4a2626; color: var(--warn); font-size: 14px; font-weight: 700; }
+  button:hover { border-color: #47506a; }
+  button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 650; }
+  button:disabled { opacity: .4; cursor: not-allowed; }
+
+  .panel { background: linear-gradient(180deg, var(--panel2), var(--panel)); border: 1px solid var(--line);
+           border-radius: 16px; padding: 18px; min-width: 0; }
+  .ptitle { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
+  .label { font-size: 11px; color: var(--dim); text-transform: uppercase; letter-spacing: .1em; font-weight: 600; }
+
+  .grid { display: grid; grid-template-columns: 1.05fr 1fr; gap: 16px; }
+  .grid2 { display: grid; grid-template-columns: 300px 1fr; gap: 16px; }
+  @media (max-width: 900px) { .grid, .grid2 { grid-template-columns: 1fr; } }
+
+  .warn { background: #2a1717; border: 1px solid #4a2626; color: #ffb3ab; border-radius: 12px; padding: 11px 14px; font-size: 13px; display: none; }
+  .warn.show { display: block; }
+
+  /* ---- rover view ---- */
+  .rover-wrap { display: grid; grid-template-columns: 1fr 190px; gap: 12px; align-items: center; }
+  @media (max-width: 560px) { .rover-wrap { grid-template-columns: 1fr; } }
+  #rover { width: 100%; max-height: 430px; display: block; }
+  .readout { display: grid; gap: 14px; }
+  .state { font-size: 30px; font-weight: 750; letter-spacing: .03em; line-height: 1.1; }
+  .state.moving { color: var(--accent); }
+  .src { color: var(--dim); font-size: 12px; margin-top: 4px; }
+  .sidebars { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .sbar { background: #0e1117; border: 1px solid var(--line); border-radius: 12px; padding: 10px; text-align: center; }
+  .sbar .track { height: 120px; width: 18px; margin: 8px auto; border-radius: 9px; background: #1a1f2a; position: relative; overflow: hidden; }
+  .sbar .track::after { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 1px; background: var(--line2); }
+  .sbar .fill { position: absolute; left: 0; right: 0; border-radius: 9px; transition: background .2s; }
+  .sbar .pct { font-variant-numeric: tabular-nums; font-weight: 650; font-size: 15px; }
+  .sbar .pwm { font: 11px ui-monospace, Menlo, monospace; color: var(--faint); }
+
+  /* ---- gamepad ---- */
+  #gp { width: 100%; display: block; }
+  #gp .btn { fill: #222838; stroke: #3a4256; stroke-width: 1.5; transition: fill .06s; }
+  #gp .btn.on { fill: var(--accent); stroke: var(--accent); }
+  #gp .face.on { stroke: #fff; }
+  #gp text { font: 600 11px -apple-system, system-ui, sans-serif; fill: #c9cfdc; pointer-events: none; }
+  #gp .face-a { fill: #1f3a2a; } #gp .face-b { fill: #3e1f1f; } #gp .face-x { fill: #1d2c45; } #gp .face-y { fill: #3d3418; }
+  #gp .face-a.on { fill: #3ddc97; } #gp .face-b.on { fill: #ff6b5b; } #gp .face-x.on { fill: #5aa9ff; } #gp .face-y.on { fill: #ffd166; }
+  .axes { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; margin-top: 10px; }
+  .axis { background: #0e1117; border: 1px solid var(--line); border-radius: 9px; padding: 6px 4px; text-align: center; }
+  .axis span { display: block; font-size: 10px; color: var(--faint); letter-spacing: .08em; }
+  .axis b { font: 600 12.5px ui-monospace, Menlo, monospace; font-variant-numeric: tabular-nums; }
+
+  /* ---- settings ---- */
+  .row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 11px 0; border-top: 1px solid var(--line); }
+  .row:first-of-type { border-top: 0; padding-top: 0; }
+  .seg { display: inline-flex; background: #0e1117; border: 1px solid var(--line); border-radius: 10px; padding: 3px; }
+  .seg button { border: 0; background: transparent; padding: 5px 12px; border-radius: 7px; color: var(--dim); font-size: 13px; }
+  .seg button.on { background: var(--btn); color: var(--text); box-shadow: 0 1px 0 #ffffff10 inset; }
+  .arm { width: 100%; padding: 12px; font-weight: 700; letter-spacing: .06em; border-radius: 12px; font-size: 14px; }
+  .arm.armed { background: #3ddc9722; border-color: var(--accent); color: var(--accent); box-shadow: 0 0 24px -6px #3ddc9799; }
+  .arm.disarmed { background: #2a1717; border-color: #4a2626; color: #ff9d92; }
+  .speedrow { display: flex; align-items: center; gap: 10px; flex: 1; max-width: 230px; }
+  input[type=range] { flex: 1; accent-color: var(--accent); }
+  .speedval { font-variant-numeric: tabular-nums; min-width: 34px; text-align: right; font-weight: 650; }
+  .switch { position: relative; width: 38px; height: 22px; flex: none; }
+  .switch input { opacity: 0; width: 0; height: 0; position: absolute; }
+  .switch span { position: absolute; inset: 0; border-radius: 11px; background: #2a3040; transition: background .15s; cursor: pointer; }
+  .switch span::after { content: ""; position: absolute; width: 16px; height: 16px; left: 3px; top: 3px; border-radius: 50%; background: #cfd4df; transition: transform .15s; }
+  .switch input:checked + span { background: var(--accent); }
+  .switch input:checked + span::after { transform: translateX(16px); background: #fff; }
+  .hint { color: var(--faint); font-size: 12px; }
+  .boost { display: flex; gap: 6px; }
+  .tag { font-size: 11px; padding: 3px 8px; border-radius: 6px; background: #0e1117; border: 1px solid var(--line); color: var(--faint); font-weight: 600; letter-spacing: .04em; }
+  .tag.on { color: var(--accent-ink); background: var(--accent); border-color: var(--accent); }
+  .tag.on.slow { background: var(--blue); border-color: var(--blue); }
+
+  /* ---- keyboard pad ---- */
+  .pad { display: grid; grid-template-columns: repeat(3, 72px); grid-template-rows: repeat(3, 72px); gap: 9px; justify-content: center; margin: 4px 0 14px; }
+  .pad button { font-size: 22px; border-radius: 14px; padding: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; touch-action: none; }
+  .pad button small { font-size: 10px; color: var(--dim); margin-top: 2px; }
+  .pad button.active { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+  .pad button.active small { color: var(--accent-ink); }
+  .pad .stop { background: #2a1717; border-color: #4a2626; color: var(--warn); font-size: 13px; font-weight: 750; }
   .pad .stop.active { background: var(--warn); color: #fff; border-color: var(--warn); }
   .f { grid-area: 1 / 2; } .l { grid-area: 2 / 1; } .s { grid-area: 2 / 2; } .r { grid-area: 2 / 3; } .b { grid-area: 3 / 2; }
+  kbd { background: var(--btn); border: 1px solid var(--line2); border-bottom-width: 2px; border-radius: 5px; padding: 0 5px; font: 11px ui-monospace, Menlo, monospace; color: var(--text); }
 
-  .label { font-size: 12px; color: var(--dim); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 6px; }
-  .state { font-size: 34px; font-weight: 700; letter-spacing: .04em; margin-bottom: 18px; }
-  .state.moving { color: var(--accent); }
-  .speedrow { display: flex; align-items: center; gap: 12px; margin-bottom: 18px; }
-  input[type=range] { flex: 1; accent-color: var(--accent); }
-  .speedval { font-variant-numeric: tabular-nums; min-width: 42px; text-align: right; font-weight: 600; }
-  .toggle { display: flex; align-items: center; gap: 8px; color: var(--dim); font-size: 13px; cursor: pointer; }
-  .keys { color: var(--dim); font-size: 13px; margin-top: 16px; line-height: 1.7; }
-  kbd { background: var(--btn); border: 1px solid var(--line); border-radius: 5px; padding: 1px 6px; font: 12px ui-monospace, Menlo, monospace; color: var(--text); }
+  .map { display: grid; grid-template-columns: auto 1fr; gap: 7px 14px; font-size: 13px; align-items: center; }
+  .map .k { display: flex; gap: 4px; justify-content: flex-end; }
+  .chip { font: 600 11px -apple-system, system-ui, sans-serif; padding: 2px 7px; border-radius: 6px; background: var(--btn); border: 1px solid var(--line2); white-space: nowrap; }
+  .chip.a { background: #1f3a2a; border-color: #2f6b49; color: #8ff0c2; } .chip.b { background: #3e1f1f; border-color: #6b2f2f; color: #ffb0a8; }
+  .chip.y { background: #3d3418; border-color: #6b5a2f; color: #ffe08a; }
+  .bottom { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 900px) { .bottom { grid-template-columns: 1fr; } }
 
-  .log { font: 12px/1.5 ui-monospace, Menlo, monospace; height: 140px; overflow-y: auto; color: var(--dim); white-space: pre-wrap; }
-  .log .rx { color: var(--text); } .log .err { color: var(--warn); }
-  .warn { background: #2a1a1a; border: 1px solid #4a2626; color: #ffb3ab; border-radius: 10px; padding: 12px 14px; font-size: 13px; display: none; }
+  .log { font: 12px/1.55 ui-monospace, Menlo, monospace; height: 150px; overflow-y: auto; color: var(--dim); white-space: pre-wrap;
+         background: #0b0d12; border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; }
+  .log .rx { color: var(--text); } .log .err { color: var(--warn); } .log .ok { color: var(--accent); }
 </style>
 </head>
 <body>
 <div class="app">
   <header>
-    <h1>Rover Control</h1>
-    <div style="display:flex;gap:12px;align-items:center">
-      <div class="status"><span class="dot" id="dot"></span><span id="statusText">Disconnected</span></div>
-      <button class="primary" id="connectBtn">Connect</button>
+    <div class="brand">
+      <div class="logo"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#062014" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="5" width="12" height="14" rx="2"/><rect x="2" y="4" width="3" height="6" rx="1"/><rect x="19" y="4" width="3" height="6" rx="1"/><rect x="2" y="14" width="3" height="6" rx="1"/><rect x="19" y="14" width="3" height="6" rx="1"/></svg></div>
+      <div><h1>Rover Control</h1><div class="sub">FDT · 4-wheel drive · Logitech F310</div></div>
+    </div>
+    <div class="hright">
+      <div class="pill"><span class="dot" id="gpDot"></span><span id="gpText">No gamepad — press any button</span></div>
+      <div class="pill"><span class="dot" id="dot"></span><span id="statusText">Rover disconnected</span></div>
+      <button class="primary" id="connectBtn">Connect rover</button>
     </div>
   </header>
 
   <div class="warn" id="noSerial">This browser doesn't support Web Serial. Open this page in <b>Chrome</b> or <b>Edge</b> on your Mac.</div>
+  <div class="warn" id="gpWarn">The gamepad isn't in a mode this browser understands. Flip the switch on the back of the F310 to <b>D</b> (DirectInput), then unplug and replug it.</div>
 
-  <div class="main">
+  <div class="grid">
+    <!-- Rover -->
     <div class="panel">
-      <div class="pad">
-        <button class="f" data-cmd="F">▲<small>W</small></button>
-        <button class="l" data-cmd="L">◀<small>A</small></button>
-        <button class="s stop" data-cmd="S">STOP<small>SPACE</small></button>
-        <button class="r" data-cmd="R">▶<small>D</small></button>
-        <button class="b" data-cmd="B">▼<small>S</small></button>
+      <div class="ptitle"><div class="label">Rover · live wheel output</div><div class="hint" id="modeHint">Arcade drive</div></div>
+      <div class="rover-wrap">
+        <svg id="rover" viewBox="0 0 320 400" aria-label="Top-down rover view">
+          <defs>
+            <pattern id="treadL" patternUnits="userSpaceOnUse" width="44" height="12"><rect width="44" height="12" fill="#1b1f29"/><rect y="0" width="44" height="5" rx="1" fill="#2c3242"/></pattern>
+            <pattern id="treadR" patternUnits="userSpaceOnUse" width="44" height="12"><rect width="44" height="12" fill="#1b1f29"/><rect y="0" width="44" height="5" rx="1" fill="#2c3242"/></pattern>
+            <linearGradient id="body" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#232a38"/><stop offset="1" stop-color="#171b25"/></linearGradient>
+            <filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="6"/></filter>
+          </defs>
+          <!-- floor grid -->
+          <g stroke="#1a1e28" stroke-width="1">
+            <path d="M0 50H320M0 100H320M0 150H320M0 200H320M0 250H320M0 300H320M0 350H320M40 0V400M80 0V400M120 0V400M160 0V400M200 0V400M240 0V400M280 0V400"/>
+          </g>
+          <!-- axles -->
+          <rect x="70" y="112" width="180" height="8" rx="4" fill="#2a3040"/>
+          <rect x="70" y="280" width="180" height="8" rx="4" fill="#2a3040"/>
+          <!-- chassis -->
+          <rect x="88" y="60" width="144" height="280" rx="22" fill="url(#body)" stroke="#353d50" stroke-width="2"/>
+          <rect x="104" y="150" width="112" height="100" rx="10" fill="#10141c" stroke="#2a3142"/>
+          <!-- HC-SR04 "eyes" -->
+          <rect x="122" y="62" width="76" height="22" rx="5" fill="#1a3a5a" stroke="#2c5a86"/>
+          <circle cx="140" cy="73" r="8" fill="#0e1117" stroke="#9aa3b5" stroke-width="1.5"/>
+          <circle cx="180" cy="73" r="8" fill="#0e1117" stroke="#9aa3b5" stroke-width="1.5"/>
+          <text x="160" y="50" text-anchor="middle" fill="#5a6172" font-size="10" font-weight="700" letter-spacing="2" font-family="system-ui">FRONT</text>
+          <!-- heading arrow -->
+          <g id="heading" transform="translate(160 200)">
+            <circle r="34" fill="none" stroke="#252b38" stroke-width="2" stroke-dasharray="3 5"/>
+            <path id="turnArc" d="" fill="none" stroke="#3ddc97" stroke-width="4" stroke-linecap="round" opacity="0"/>
+            <g id="arrow" opacity="0.25"><line x1="0" y1="0" x2="0" y2="-28" stroke="#3ddc97" stroke-width="5" stroke-linecap="round"/><path d="M-9 -22 L0 -34 L9 -22" fill="none" stroke="#3ddc97" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/></g>
+            <circle r="5" fill="#3a4256"/>
+          </g>
+          <!-- wheels: glow + tread + rim -->
+          <g id="wheels"></g>
+        </svg>
+        <div class="readout">
+          <div>
+            <div class="label">State</div>
+            <div class="state" id="state">STOPPED</div>
+            <div class="src" id="src">Idle</div>
+          </div>
+          <div class="sidebars">
+            <div class="sbar"><div class="label">Left</div><div class="track"><div class="fill" id="fillL"></div></div><div class="pct" id="pctL">0%</div><div class="pwm" id="pwmL">pwm 0</div></div>
+            <div class="sbar"><div class="label">Right</div><div class="track"><div class="fill" id="fillR"></div></div><div class="pct" id="pctR">0%</div><div class="pwm" id="pwmR">pwm 0</div></div>
+          </div>
+        </div>
       </div>
     </div>
 
+    <!-- Gamepad -->
     <div class="panel">
-      <div class="label">State</div>
-      <div class="state" id="state">STOPPED</div>
-
-      <div class="label">Speed</div>
-      <div class="speedrow">
-        <input type="range" id="speed" min="1" max="9" value="7">
-        <span class="speedval" id="speedVal">7/9</span>
+      <div class="ptitle"><div class="label">Controller</div><div class="boost"><span class="tag slow" id="tagSlow">PRECISION</span><span class="tag" id="tagTurbo">TURBO</span></div></div>
+      <svg id="gp" viewBox="0 0 460 250" aria-label="Gamepad input">
+        <!-- triggers / bumpers -->
+        <rect class="btn" id="b6" x="70" y="6" width="74" height="22" rx="8"/>
+        <rect id="lt" x="70" y="6" width="0" height="22" rx="8" fill="#5aa9ff" opacity=".85"/>
+        <text x="107" y="21" text-anchor="middle">LT</text>
+        <rect class="btn" id="b7" x="316" y="6" width="74" height="22" rx="8"/>
+        <rect id="rt" x="316" y="6" width="0" height="22" rx="8" fill="#3ddc97" opacity=".85"/>
+        <text x="353" y="21" text-anchor="middle">RT</text>
+        <rect class="btn" id="b4" x="62" y="34" width="96" height="16" rx="7"/><text x="110" y="46" text-anchor="middle">LB</text>
+        <rect class="btn" id="b5" x="302" y="34" width="96" height="16" rx="7"/><text x="350" y="46" text-anchor="middle">RB</text>
+        <!-- body -->
+        <path d="M120 52 H340 C392 52 420 76 434 128 L452 196 C460 226 440 246 414 242 C394 239 382 226 368 206 L346 176 H114 L92 206 C78 226 66 239 46 242 C20 246 0 226 8 196 L26 128 C40 76 68 52 120 52 Z" fill="#1a1e28" stroke="#323848" stroke-width="2"/>
+        <!-- d-pad -->
+        <g transform="translate(102 112)">
+          <rect class="btn" id="b12" x="-11" y="-36" width="22" height="26" rx="4"/>
+          <rect class="btn" id="b13" x="-11" y="10" width="22" height="26" rx="4"/>
+          <rect class="btn" id="b14" x="-36" y="-11" width="26" height="22" rx="4"/>
+          <rect class="btn" id="b15" x="10" y="-11" width="26" height="22" rx="4"/>
+          <rect x="-11" y="-11" width="22" height="22" fill="#222838"/>
+        </g>
+        <!-- face buttons -->
+        <g transform="translate(358 112)">
+          <circle class="btn face face-y" id="b3" cx="0" cy="-26" r="13"/><text x="0" y="-22" text-anchor="middle">Y</text>
+          <circle class="btn face face-x" id="b2" cx="-26" cy="0" r="13"/><text x="-26" y="4" text-anchor="middle">X</text>
+          <circle class="btn face face-b" id="b1" cx="26" cy="0" r="13"/><text x="26" y="4" text-anchor="middle">B</text>
+          <circle class="btn face face-a" id="b0" cx="0" cy="26" r="13"/><text x="0" y="30" text-anchor="middle">A</text>
+        </g>
+        <!-- back / start / logo -->
+        <rect class="btn" id="b8" x="186" y="92" width="28" height="13" rx="6.5"/><text x="200" y="120" text-anchor="middle" style="font-size:9px;fill:#6b7385">BACK</text>
+        <rect class="btn" id="b9" x="246" y="92" width="28" height="13" rx="6.5"/><text x="260" y="120" text-anchor="middle" style="font-size:9px;fill:#6b7385">START</text>
+        <circle cx="230" cy="75" r="10" fill="#222838" stroke="#3a4256"/>
+        <!-- sticks -->
+        <g transform="translate(168 166)">
+          <circle r="30" fill="#10131a" stroke="#2c3242" stroke-width="2"/>
+          <line id="ls-line" x1="0" y1="0" x2="0" y2="0" stroke="#3ddc97" stroke-width="2" opacity=".6"/>
+          <circle class="btn" id="b10" r="17"/>
+        </g>
+        <g transform="translate(292 166)">
+          <circle r="30" fill="#10131a" stroke="#2c3242" stroke-width="2"/>
+          <line id="rs-line" x1="0" y1="0" x2="0" y2="0" stroke="#3ddc97" stroke-width="2" opacity=".6"/>
+          <circle class="btn" id="b11" r="17"/>
+        </g>
+      </svg>
+      <div class="axes">
+        <div class="axis"><span>LX</span><b id="ax0">0.00</b></div>
+        <div class="axis"><span>LY</span><b id="ax1">0.00</b></div>
+        <div class="axis"><span>RX</span><b id="ax2">0.00</b></div>
+        <div class="axis"><span>RY</span><b id="ax3">0.00</b></div>
+        <div class="axis"><span>LT</span><b id="ax4">0.00</b></div>
+        <div class="axis"><span>RT</span><b id="ax5">0.00</b></div>
       </div>
+    </div>
+  </div>
 
-      <label class="toggle"><input type="checkbox" id="latch"> Latch mode (stay moving after release)</label>
+  <div class="grid2">
+    <!-- Drive settings -->
+    <div class="panel">
+      <div class="label" style="margin-bottom:12px">Drive</div>
+      <button class="arm disarmed" id="armBtn">DISARMED · press A to arm</button>
+      <div style="height:12px"></div>
+      <div class="row"><span>Stick mode</span>
+        <div class="seg" id="modeSeg"><button data-mode="arcade" class="on">Arcade</button><button data-mode="tank">Tank</button></div></div>
+      <div class="row"><span>Speed limit</span>
+        <div class="speedrow"><input type="range" id="speed" min="1" max="9" value="7"><span class="speedval" id="speedVal">7/9</span></div></div>
+      <div class="row"><span>Invert steering</span><label class="switch"><input type="checkbox" id="invert"><span></span></label></div>
+      <div class="row"><span>Latch keys</span><label class="switch"><input type="checkbox" id="latch"><span></span></label></div>
+      <div class="row" style="padding-bottom:0"><button id="testBtn" style="width:100%" disabled>Run motor test (wheels off ground)</button></div>
+    </div>
 
-      <button id="testBtn" style="margin-top:16px;width:100%" disabled>Run motor test (wheels off ground)</button>
-
-      <div class="keys">
-        <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> or arrows to drive (hold)<br>
-        <kbd>Space</kbd> stop &nbsp; <kbd>1</kbd>–<kbd>9</kbd> speed
+    <div class="bottom">
+      <div class="panel">
+        <div class="label" style="margin-bottom:12px">F310 mapping</div>
+        <div class="map">
+          <div class="k"><span class="chip">Left stick ↕</span></div><div>Throttle <span class="hint">(arcade) · left wheels (tank)</span></div>
+          <div class="k"><span class="chip">Right stick</span></div><div>Steer ↔ <span class="hint">(arcade) · right wheels ↕ (tank)</span></div>
+          <div class="k"><span class="chip">D-pad</span></div><div>Drive at speed limit</div>
+          <div class="k"><span class="chip">RT</span></div><div>Turbo — full speed while held</div>
+          <div class="k"><span class="chip">LT</span></div><div>Precision — 40% while held</div>
+          <div class="k"><span class="chip">LB</span><span class="chip">RB</span></div><div>Speed limit − / +</div>
+          <div class="k"><span class="chip a">A</span></div><div>Arm</div>
+          <div class="k"><span class="chip b">B</span></div><div><b style="color:var(--warn)">Emergency stop</b> + disarm</div>
+          <div class="k"><span class="chip y">Y</span></div><div>Toggle arcade / tank</div>
+        </div>
+      </div>
+      <div class="panel">
+        <div class="label" style="margin-bottom:8px">Keyboard / mouse</div>
+        <div class="pad">
+          <button class="f" data-cmd="F">▲<small>W</small></button>
+          <button class="l" data-cmd="L">◀<small>A</small></button>
+          <button class="s stop" data-cmd="S">STOP<small>SPACE</small></button>
+          <button class="r" data-cmd="R">▶<small>D</small></button>
+          <button class="b" data-cmd="B">▼<small>S</small></button>
+        </div>
+        <div class="hint" style="text-align:center"><kbd>1</kbd>–<kbd>9</kbd> speed · keys override the gamepad</div>
       </div>
     </div>
   </div>
 
   <div class="panel">
-    <div class="label">Rover log</div>
+    <div class="label" style="margin-bottom:8px">Rover log</div>
     <div class="log" id="log"></div>
   </div>
 </div>
 
 <script>
+// ---------------------------------------------------------------------------
+// Everything is computed as a left/right wheel value in -1..1, scaled by the
+// speed limit, and sent as "M<left> <right>\n" (PWM -255..255). The firmware
+// stops on its own if nothing arrives for 500 ms.
+// ---------------------------------------------------------------------------
 const NAMES = { F: 'FORWARD', B: 'BACKWARD', L: 'LEFT', R: 'RIGHT', S: 'STOPPED' };
+// Same wheel directions as the firmware's single-char commands (keyboard keeps these)
+const CMD_LR = { F: [1, 1], B: [-1, -1], L: [1, -1], R: [-1, 1], S: [0, 0] };
+// Gamepad follows the physical wheel labels: turning right = left wheels faster
+const DPAD_LR = { F: [1, 1], B: [-1, -1], L: [-1, 1], R: [1, -1] };
 const KEYMAP = { w: 'F', arrowup: 'F', s: 'B', arrowdown: 'B', a: 'L', arrowleft: 'L', d: 'R', arrowright: 'R', ' ': 'S' };
 const HEARTBEAT_MS = 100;   // firmware failsafe is 500 ms
+const MIN_SEND_MS = 30;     // don't flood the serial port with tiny stick changes
+const DEADZONE = 0.12;
+const MIN_PWM = 60;         // below this the motors just hum
+const PRECISION = 0.4;
+const DEMO = new URLSearchParams(location.search).has('demo');
 
-let port = null, writer = null, reader = null;
-let cmd = 'S';
-let gotData = false;
+let port = null, writer = null, reader = null, gotData = false;
+let armed = false, mode = 'arcade', testCmd = null;
+let sent = { l: null, r: null, t: 0 };
+let prevButtons = [];
 const held = [];            // stack of held drive keys (most recent wins)
 
 const $ = id => document.getElementById(id);
@@ -138,31 +351,232 @@ async function send(text) {
   catch (e) { log('Write failed: ' + e.message, 'err'); }
 }
 
-function setCmd(c) {
-  if (c === cmd) return;
-  cmd = c;
-  send(c);
-  $('state').textContent = NAMES[c];
-  $('state').classList.toggle('moving', c !== 'S');
-  document.querySelectorAll('.pad button').forEach(b => b.classList.toggle('active', b.dataset.cmd === c));
-}
-
+// ---- Keyboard / on-screen pad ----
+function keyCmd() { return held.length ? held[held.length - 1] : 'S'; }
 function press(c) {
-  if (c === 'S') { held.length = 0; setCmd('S'); return; }
+  if (c === 'S') { held.length = 0; return; }
   const i = held.indexOf(c); if (i >= 0) held.splice(i, 1);
   held.push(c);
-  setCmd(c);
 }
 function release(c) {
   if ($('latch').checked) return;
   const i = held.indexOf(c); if (i >= 0) held.splice(i, 1);
-  setCmd(held.length ? held[held.length - 1] : 'S');
 }
+function stopAll() { held.length = 0; testCmd = null; }
 
 function setSpeed(v) {
+  v = Math.max(1, Math.min(9, +v));
   $('speed').value = v;
   $('speedVal').textContent = `${v}/9`;
-  send(String(v));
+}
+
+function setArmed(on, why) {
+  if (on === armed) return;
+  armed = on;
+  const b = $('armBtn');
+  b.className = 'arm ' + (on ? 'armed' : 'disarmed');
+  b.textContent = on ? 'ARMED · B = emergency stop' : 'DISARMED · press A to arm';
+  if (why) log(why, on ? 'ok' : 'err');
+}
+
+function setMode(m) {
+  mode = m;
+  document.querySelectorAll('#modeSeg button').forEach(b => b.classList.toggle('on', b.dataset.mode === m));
+  $('modeHint').textContent = m === 'tank' ? 'Tank drive' : 'Arcade drive';
+}
+
+// ---- Gamepad ----
+const dz = v => Math.abs(v) < DEADZONE ? 0 : Math.sign(v) * (Math.abs(v) - DEADZONE) / (1 - DEADZONE);
+
+function getPad() {
+  if (DEMO) return demoPad();
+  const pads = [...(navigator.getGamepads ? navigator.getGamepads() : [])].filter(Boolean);
+  return pads.find(p => /logitech|f310|046d/i.test(p.id)) || pads[0] || null;
+}
+
+let lastPadId = null;
+function readPad() {
+  const pad = getPad();
+  const id = pad ? pad.id : null;
+  if (id !== lastPadId) {
+    lastPadId = id;
+    $('gpDot').classList.toggle('on', !!pad);
+    $('gpText').innerHTML = pad ? `<b>${prettyPad(pad.id)}</b>` : 'No gamepad — press any button';
+    $('gpWarn').classList.toggle('show', !!pad && pad.mapping !== 'standard');
+    if (pad) log(`Gamepad connected: ${pad.id}`, 'ok');
+    else setArmed(false, 'Gamepad disconnected — disarmed');
+  }
+  if (!pad) { drawPad(null); return null; }
+
+  const btn = i => pad.buttons[i] || { pressed: false, value: 0 };
+  const edge = i => btn(i).pressed && !prevButtons[i];
+
+  if (edge(0)) setArmed(true, 'Armed from gamepad');
+  if (edge(1)) { stopAll(); setArmed(false, 'EMERGENCY STOP (B)'); }
+  if (edge(3)) setMode(mode === 'arcade' ? 'tank' : 'arcade');
+  if (edge(4)) setSpeed(+$('speed').value - 1);
+  if (edge(5)) setSpeed(+$('speed').value + 1);
+  prevButtons = pad.buttons.map(b => b.pressed);
+
+  const ax = i => pad.axes[i] || 0;
+  const lx = dz(ax(0)), ly = dz(ax(1)), rx = dz(ax(2)), ry = dz(ax(3));
+  let l, r;
+  const dU = btn(12).pressed, dD = btn(13).pressed, dL = btn(14).pressed, dR = btn(15).pressed;
+  const inv = $('invert').checked;
+  if (dU || dD || dL || dR) {
+    [l, r] = DPAD_LR[dU ? 'F' : dD ? 'B' : (dL !== inv) ? 'L' : 'R'];
+  } else if (mode === 'tank') {
+    l = -ly; r = -ry;
+  } else {
+    const t = -ly, s = inv ? -rx : rx;
+    l = t + s; r = t - s;
+    const m = Math.max(1, Math.abs(l), Math.abs(r));
+    l /= m; r /= m;
+  }
+  const lt = btn(6).value, rt = btn(7).value;
+  drawPad(pad, { lx: ax(0), ly: ax(1), rx: ax(2), ry: ax(3), lt, rt });
+  return { l, r, turbo: rt > 0.5, slow: lt > 0.5 };
+}
+
+function prettyPad(id) {
+  if (/f310|c21d|c216|dual action/i.test(id)) return 'Logitech F310';
+  return id.replace(/\(.*?\)/g, '').trim().slice(0, 32) || 'Gamepad';
+}
+
+function drawPad(pad, a) {
+  for (let i = 0; i <= 15; i++) {
+    const el = $('b' + i);
+    if (el) el.classList.toggle('on', !!(pad && pad.buttons[i] && pad.buttons[i].pressed));
+  }
+  a = a || { lx: 0, ly: 0, rx: 0, ry: 0, lt: 0, rt: 0 };
+  const stick = (knob, line, x, y) => {
+    $(knob).setAttribute('transform', `translate(${x * 13} ${y * 13})`);
+    $(line).setAttribute('x2', x * 13); $(line).setAttribute('y2', y * 13);
+  };
+  stick('b10', 'ls-line', a.lx, a.ly);
+  stick('b11', 'rs-line', a.rx, a.ry);
+  $('lt').setAttribute('width', 74 * a.lt);
+  $('rt').setAttribute('width', 74 * a.rt);
+  [a.lx, a.ly, a.rx, a.ry, a.lt, a.rt].forEach((v, i) => $('ax' + i).textContent = (v >= 0 ? ' ' : '') + v.toFixed(2));
+}
+
+// Fake gamepad for ?demo so the UI can be shown without hardware
+function demoPad() {
+  const t = performance.now() / 1000;
+  const buttons = Array.from({ length: 17 }, () => ({ pressed: false, value: 0 }));
+  if (!armed && t > 0.5) buttons[0] = { pressed: true, value: 1 };
+  const rt = Math.max(0, Math.sin(t * 0.7) - 0.3) / 0.7;
+  buttons[7] = { pressed: rt > 0.1, value: rt };
+  return { id: 'Logitech Dual Action (STANDARD GAMEPAD Vendor: 046d Product: c216)', mapping: 'standard',
+           axes: [Math.sin(t * 0.9) * 0.2, -0.55 - 0.35 * Math.sin(t * 0.5), Math.sin(t * 1.1) * 0.8, 0], buttons };
+}
+
+// ---- Rover drawing ----
+const WHEELS = [
+  { side: 'L', x: 44, y: 68 }, { side: 'R', x: 232, y: 68 },
+  { side: 'L', x: 44, y: 236 }, { side: 'R', x: 232, y: 236 },
+];
+(function buildWheels() {
+  const g = $('wheels');
+  g.innerHTML = WHEELS.map((w, i) => `
+    <rect id="wg${i}" x="${w.x - 4}" y="${w.y - 4}" width="52" height="104" rx="14" fill="#3ddc97" opacity="0" filter="url(#glow)"/>
+    <rect x="${w.x}" y="${w.y}" width="44" height="96" rx="11" fill="url(#tread${w.side})" stroke="#3a4256" stroke-width="2" id="wr${i}"/>
+    <rect x="${w.x + 16}" y="${w.y + 30}" width="12" height="36" rx="4" fill="#0e1117" opacity=".7"/>
+    <text x="${w.x + 22}" y="${w.y + 120}" text-anchor="middle" font-family="ui-monospace,Menlo,monospace" font-size="12" font-weight="700" fill="#8a91a3" id="wt${i}">0%</text>
+    <text x="${w.x + 22}" y="${w.y - 8}" text-anchor="middle" font-family="system-ui" font-size="9" font-weight="700" letter-spacing="1.5" fill="#5a6172">${['FL', 'FR', 'RL', 'RR'][i]}</text>
+  `).join('');
+})();
+
+const tread = { L: 0, R: 0 };
+function drawRover(l, r, dt) {
+  const vals = { L: l, R: r };
+  for (const s of ['L', 'R']) {
+    tread[s] = (tread[s] - vals[s] * dt * 0.25 + 1200) % 12;
+    $('tread' + s).setAttribute('patternTransform', `translate(0 ${tread[s]})`);
+  }
+  WHEELS.forEach((w, i) => {
+    const v = vals[w.side], col = v >= 0 ? '#3ddc97' : '#ffb547';
+    $('wg' + i).setAttribute('fill', col);
+    $('wg' + i).setAttribute('opacity', Math.min(0.75, Math.abs(v) * 0.9));
+    $('wr' + i).setAttribute('stroke', v ? col : '#3a4256');
+    $('wt' + i).textContent = `${v > 0 ? '+' : ''}${Math.round(v * 100)}%`;
+    $('wt' + i).setAttribute('fill', v ? col : '#8a91a3');
+  });
+  for (const s of ['L', 'R']) {
+    const v = vals[s], f = $('fill' + s);
+    f.style.background = v >= 0 ? 'linear-gradient(0deg,#1fa36b,#3ddc97)' : 'linear-gradient(180deg,#c9822a,#ffb547)';
+    f.style.top = v >= 0 ? `${50 - v * 50}%` : '50%';
+    f.style.bottom = v >= 0 ? '50%' : `${50 + v * 50}%`;
+    $('pct' + s).textContent = `${v > 0 ? '+' : ''}${Math.round(v * 100)}%`;
+    $('pct' + s).style.color = v ? (v > 0 ? 'var(--accent)' : 'var(--rev)') : '';
+    $('pwm' + s).textContent = `pwm ${toPwm(v)}`;
+  }
+  // heading: throttle = average, turn = difference (+ = clockwise / right)
+  const thr = (l + r) / 2, turn = (l - r) / 2;
+  const ang = Math.atan2(turn, Math.abs(thr) || 1e-6) * 180 / Math.PI * 0.8;
+  $('arrow').setAttribute('transform', `rotate(${thr < 0 ? 180 - ang : ang})`);
+  $('arrow').setAttribute('opacity', Math.abs(thr) > 0.02 ? 0.35 + Math.abs(thr) * 0.65 : 0.15);
+  const arc = $('turnArc');
+  if (Math.abs(turn) > 0.05 && Math.abs(thr) < 0.1) {
+    const sweep = Math.min(Math.abs(turn), 1) * 150 * Math.PI / 180, dir = turn > 0 ? 1 : -1;
+    const ex = Math.sin(sweep * dir) * 34, ey = -Math.cos(sweep) * 34;
+    arc.setAttribute('d', `M0 -34 A34 34 0 ${sweep > Math.PI ? 1 : 0} ${dir > 0 ? 1 : 0} ${ex} ${ey}`);
+    arc.setAttribute('opacity', 0.9);
+  } else arc.setAttribute('opacity', 0);
+}
+
+function describe(l, r) {
+  if (!l && !r) return 'STOPPED';
+  const thr = (l + r) / 2, turn = (l - r) / 2;
+  if (Math.abs(thr) < 0.1) return turn > 0 ? 'SPIN R' : 'SPIN L';
+  const base = thr > 0 ? 'FORWARD' : 'REVERSE';
+  if (Math.abs(turn) < 0.1) return base;
+  return `${base} ${turn > 0 ? 'R' : 'L'}`;
+}
+
+// ---- Main loop ----
+let limitNow = 7 / 9;
+function toPwm(v) {
+  if (!v) return 0;
+  const max = 255 * limitNow;
+  const mag = max <= MIN_PWM ? max * Math.abs(v) : MIN_PWM + (max - MIN_PWM) * Math.abs(v);
+  return Math.sign(v) * Math.round(Math.min(255, mag));
+}
+
+let lastT = performance.now();
+function frame(now) {
+  const dt = now - lastT; lastT = now;
+  const pad = readPad();
+  let l = 0, r = 0, src = 'Idle', limit = +$('speed').value / 9;
+  const kc = keyCmd();
+
+  if (testCmd) { [l, r] = CMD_LR[testCmd]; limit = 4 / 9; src = 'Motor test'; }
+  else if (kc !== 'S') { [l, r] = CMD_LR[kc]; src = 'Keyboard'; }
+  else if (pad && armed) {
+    l = pad.l; r = pad.r; src = 'Gamepad';
+    if (pad.turbo) limit = 1; else if (pad.slow) limit *= PRECISION;
+  } else if (pad && !armed) src = 'Gamepad disarmed — press A';
+  $('tagTurbo').classList.toggle('on', !!(pad && pad.turbo && armed));
+  $('tagSlow').classList.toggle('on', !!(pad && pad.slow && armed && !pad.turbo));
+  limitNow = limit;
+
+  const L = toPwm(l), R = toPwm(r);
+  if (writer) {
+    const changed = L !== sent.l || R !== sent.r;
+    const moving = L || R;
+    if ((changed && (now - sent.t > MIN_SEND_MS || !moving)) || (moving && now - sent.t > HEARTBEAT_MS)) {
+      send(`M${L} ${R}\n`);
+      sent = { l: L, r: R, t: now };
+    }
+  }
+
+  const name = describe(l, r);
+  $('state').textContent = name;
+  $('state').classList.toggle('moving', name !== 'STOPPED');
+  $('src').textContent = src + (name !== 'STOPPED' ? ` · limit ${Math.round(limit * 100)}%` : '');
+  document.querySelectorAll('.pad button').forEach(b => b.classList.toggle('active', kc !== 'S' && b.dataset.cmd === kc));
+  drawRover(l, r, dt);
+  requestAnimationFrame(frame);
 }
 
 // ---- Serial ----
@@ -171,17 +585,17 @@ async function connect() {
   try {
     port = await navigator.serial.requestPort();
     await port.open({ baudRate: 115200 });
-    // Release DTR/RTS so the ESP32 auto-reset circuit doesn't hold it in reset/bootloader
+    // Release DTR/RTS so the auto-reset circuit doesn't hold the board in reset/bootloader
     try { await port.setSignals({ dataTerminalReady: false, requestToSend: false }); } catch (e) {}
     writer = port.writable.getWriter();
+    sent = { l: null, r: null, t: 0 };
     setConnected(true);
     gotData = false;
-    log('Connected. Waiting for rover (ESP32 resets on connect)…');
+    log('Connected. Waiting for rover…');
     readLoop();
     setTimeout(() => {
-      if (port && !gotData) log('No reply from rover yet. Press the EN/RST button on the board. If still nothing: firmware not uploaded, or wrong port.', 'err');
+      if (port && !gotData) log('No reply from rover yet. Press RST on the board. If still nothing: firmware not uploaded, or wrong port.', 'err');
     }, 4000);
-    setTimeout(() => setSpeed($('speed').value), 1500);
   } catch (e) {
     port = null;
     if (e.name !== 'NotFoundError') log('Connect failed: ' + e.message, 'err');
@@ -197,7 +611,7 @@ async function disconnect() {
   } catch (e) {}
   port = null;
   setConnected(false);
-  held.length = 0; setCmd('S');
+  stopAll();
   log('Disconnected.');
 }
 
@@ -231,44 +645,39 @@ async function readLoop() {
 
 function setConnected(on) {
   $('dot').classList.toggle('on', on);
-  $('statusText').textContent = on ? 'Connected' : 'Disconnected';
-  $('connectBtn').textContent = on ? 'Disconnect' : 'Connect';
+  $('statusText').innerHTML = on ? '<b>Rover connected</b>' : 'Rover disconnected';
+  $('connectBtn').textContent = on ? 'Disconnect' : 'Connect rover';
   $('connectBtn').classList.toggle('primary', !on);
   $('testBtn').disabled = !on;
-  if (!on) testing = false;
 }
 
 // ---- Automatic motor test: F, B, L, R for 1.5 s each at speed 4 ----
-let testing = false;
 const sleep = ms => new Promise(r => setTimeout(r, ms));
+let testing = false;
 async function runTest() {
-  if (testing) { testing = false; return; }        // second click aborts
+  if (testing) { testing = false; testCmd = null; return; }   // second click aborts
   testing = true;
-  const btn = $('testBtn'), prevSpeed = $('speed').value;
+  const btn = $('testBtn');
   btn.textContent = 'Abort test';
-  setSpeed(4);
   log('--- Motor test start ---');
   for (const c of ['F', 'B', 'L', 'R']) {
     if (!testing || !writer) break;
     log(`Test: ${NAMES[c]} — check the wheels`);
-    setCmd(c); await sleep(1500);
-    setCmd('S'); await sleep(800);
+    testCmd = c; await sleep(1500);
+    testCmd = null; await sleep(800);
   }
-  setCmd('S');
+  testCmd = null;
   log(testing ? '--- Motor test done ---' : '--- Motor test aborted ---');
   testing = false;
-  setSpeed(prevSpeed);
   btn.textContent = 'Run motor test (wheels off ground)';
 }
-$('testBtn').onclick = runTest;
-document.addEventListener('keydown', e => { if (e.key === ' ' && testing) testing = false; });
-
-// Heartbeat keeps the firmware failsafe from tripping while moving
-setInterval(() => { if (writer && cmd !== 'S') send(cmd); }, HEARTBEAT_MS);
 
 // ---- Inputs ----
+$('testBtn').onclick = runTest;
 $('connectBtn').onclick = connect;
 $('speed').oninput = e => setSpeed(e.target.value);
+$('armBtn').onclick = () => armed ? (stopAll(), setArmed(false, 'Disarmed')) : setArmed(true, 'Armed');
+document.querySelectorAll('#modeSeg button').forEach(b => b.onclick = () => setMode(b.dataset.mode));
 
 document.querySelectorAll('.pad button').forEach(btn => {
   const c = btn.dataset.cmd;
@@ -279,23 +688,30 @@ document.querySelectorAll('.pad button').forEach(btn => {
 
 document.addEventListener('keydown', e => {
   const k = e.key.toLowerCase();
-  if (KEYMAP[k]) { e.preventDefault(); if (!e.repeat) press(KEYMAP[k]); }
+  if (KEYMAP[k]) {
+    e.preventDefault();
+    if (k === ' ' && testing) { testing = false; testCmd = null; }
+    if (!e.repeat) press(KEYMAP[k]);
+  }
   else if (/^[1-9]$/.test(k)) setSpeed(k);
 });
 document.addEventListener('keyup', e => {
   const k = e.key.toLowerCase();
   if (KEYMAP[k] && KEYMAP[k] !== 'S') release(KEYMAP[k]);
 });
-// Safety: stop if the window loses focus or closes
-window.addEventListener('blur', () => { held.length = 0; setCmd('S'); });
+// Safety: stop and disarm if the window loses focus or closes
+window.addEventListener('blur', () => { if (DEMO) return; stopAll(); setArmed(false, 'Window lost focus — stopped and disarmed'); });
 window.addEventListener('beforeunload', () => send('S'));
+window.addEventListener('gamepadconnected', e => log(`Gamepad detected (${e.gamepad.mapping || 'non-standard'} mapping)`));
 
 if (!('serial' in navigator)) {
-  $('noSerial').style.display = 'block';
+  $('noSerial').classList.add('show');
   $('connectBtn').disabled = true;
 } else {
   navigator.serial.addEventListener('disconnect', e => { if (e.target === port) disconnect(); });
 }
+if (DEMO) log('Demo mode: simulated F310 input (remove ?demo from the URL to use the real gamepad)');
+requestAnimationFrame(frame);
 </script>
 </body>
 </html>
